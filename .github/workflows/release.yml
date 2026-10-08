@@ -43,7 +43,7 @@ jobs:
       # the host or the token.
       - name: Build sdist and wheel
         run: |
-          python -m pip install build==1.6.1
+          python -m pip install build==1.6.1 setuptools setuptools-scm
           python -m build --no-isolation --sdist --wheel
 
       - name: Verify package metadata
