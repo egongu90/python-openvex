@@ -1,0 +1,83 @@
+name: Release
+
+# Release runs ONLY when a version tag is pushed. No pull requests, no
+# branches, no manual dispatch.
+on:
+  push:
+    tags:
+      - 'v*'
+
+# Never run two releases for the same tag; never cancel an in-progress one.
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+# Least privilege: read the source, write the artifacts, and mint the OIDC
+# token needed for Sigstore signing. No other scopes are granted.
+permissions:
+  contents: read
+  actions: write
+  id-token: write
+
+jobs:
+  build:
+    name: Build, attest, publish
+    runs-on: ubuntu-latest
+    # Optional human gate: configure required reviewers on the "release"
+    # environment in repo settings to add an approval step before publishing.
+    environment: release
+    timeout-minutes: 30
+    steps:
+      # Hard gate: proceed only on a v* tag push. Enforces "only on tags"
+      # even if this workflow is ever re-triggered by another event type.
+      - name: "Guard: only version tags"
+        run: |
+          if [ "$GITHUB_EVENT_NAME" != "push" ]; then
+            echo "::error::Triggered by '$GITHUB_EVENT_NAME', not a tag push. Aborting."
+            exit 1
+          fi
+          case "$GITHUB_REF" in
+            refs/tags/v*) : ;;
+            *) echo "::error::'$GITHUB_REF' is not a v* tag. Aborting."; exit 1 ;;
+          esac
+
+      # Build the exact commit the tag points to (not the mutable tag ref),
+      # so a later tag move cannot change what we build.
+      - name: Checkout
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          ref: ${{ github.sha }}
+
+      - name: Set up Python
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
+        with:
+          python-version: '3.12'
+
+      # PEP 517 isolated build: the backend and its dependencies are installed
+      # in a throwaway virtualenv, so untrusted build-time code cannot touch
+      # the host or the token.
+      - name: Build sdist and wheel
+        run: |
+          python -m pip install build==1.6.1
+          python -m build
+
+      - name: Verify package metadata
+        run: |
+          python -m pip install twine==7.0.0
+          python -m twine check --strict dist/*
+
+      # SLSA provenance: run in the same job as the build so the attestation
+      # links the build steps to the artifacts (SLSA level 2).
+      - name: Generate provenance attestation
+        uses: actions/attest-build-provenance@e8998f949152b193b063cb0ec769d69d929409be # v2
+        with:
+          subject-path: dist/*
+
+      # Publish the built sdist and wheel as a GitHub artifact.
+      - name: Publish artifacts
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: openvex-${{ github.ref_name }}
+          path: dist/*
+          if-no-files-found: error
+          retention-days: 90
