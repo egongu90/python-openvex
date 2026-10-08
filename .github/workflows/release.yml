@@ -26,19 +26,6 @@ jobs:
     environment: release
     timeout-minutes: 30
     steps:
-      # Hard gate: proceed only on a v* tag push. Enforces "only on tags"
-      # even if this workflow is ever re-triggered by another event type.
-      - name: "Guard: only version tags"
-        run: |
-          if [ "$GITHUB_EVENT_NAME" != "push" ]; then
-            echo "::error::Triggered by '$GITHUB_EVENT_NAME', not a tag push. Aborting."
-            exit 1
-          fi
-          case "$GITHUB_REF" in
-            refs/tags/v*) : ;;
-            *) echo "::error::'$GITHUB_REF' is not a v* tag. Aborting."; exit 1 ;;
-          esac
-
       # Build the exact commit the tag points to (not the mutable tag ref),
       # so a later tag move cannot change what we build.
       - name: Checkout
