@@ -13,7 +13,7 @@ concurrency:
 # Least privilege: read the source, write the artifacts, and mint the OIDC
 # token needed for Sigstore signing. No other scopes are granted.
 permissions:
-  contents: read
+  contents: write
   actions: write
   id-token: write
   attestations: write
@@ -60,10 +60,7 @@ jobs:
           subject-path: dist/*
 
       # Publish the built sdist and wheel as a GitHub artifact.
-      - name: Publish artifacts
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+      - name: Publish Release Assets
+        uses: softprops/action-gh-release@v2
         with:
-          name: openvex-${{ github.ref_name }}
-          path: dist/*
-          if-no-files-found: error
-          retention-days: 90
+          files: dist/*
