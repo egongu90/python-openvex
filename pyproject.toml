@@ -1,0 +1,31 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "openvex"
+version = "0.1.0"
+description = "A lightweight, embeddable OpenVEX (VEX) implementation."
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "Apache-2.0" }
+authors = [{ name = "Eduardo Gonzalez" }]
+keywords = ["vex", "openvex", "supply-chain", "security", "sbom"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: Apache Software License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3 :: Only",
+    "Topic :: Security",
+]
+
+[project.urls]
+Homepage = "https://openvex.dev"
+
+[tool.setuptools]
+packages = ["openvex", "openvex.vex"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
